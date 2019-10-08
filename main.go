@@ -6,12 +6,12 @@ import (
 )
 
 func main() {
-	var cartStatusChecker cartstatus
+	cartStatusChecker := NewCartStatus()
 	for {
-		curStatus := cartStatusChecker.GetStatus()
+		cartstatus := cartStatusChecker.GetStatus()
 
-		fmt.Printf("Internet: %v\n", curStatus.internetStatus)
-		fmt.Printf("Reader: %v\n", curStatus.readerStatus)
+		fmt.Printf("Internet: %v\n", cartstatus.internetStatus)
+		fmt.Printf("Reader: %v\n", cartstatus.readerStatus)
 		time.Sleep(5 * time.Second)
 	}
 }
