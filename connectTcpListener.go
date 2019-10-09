@@ -31,12 +31,16 @@ func (l ConnectTcpListener) StartListening(ipAddress string, port string) {
 	}
 	l.IsListening = true
 	for {
-		//fmt.Println("Listening...")
-		message, _ := bufio.NewReader(conn).ReadString('\n')
-		//fmt.Println("message from reader: " + message)
-		readerMessageReceived <- message
-		//fmt.Println("message is sent to the channel, sleeping...")
-		time.Sleep(1 * time.Second)
+
+		message, err := bufio.NewReader(conn).ReadString('\n')
+		if err != nil {
+			l.IsListening = false
+			fmt.Printf("Failed to connect: %v\n", err)
+			break
+		} else {
+			readerMessageReceived <- message
+			time.Sleep(1 * time.Second)
+		}
 	}
 }
 
