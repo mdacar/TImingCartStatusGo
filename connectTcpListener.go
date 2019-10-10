@@ -7,10 +7,9 @@ import (
 	"time"
 )
 
-const ReaderEventName = "ReaderEvent"
-
 var readerMessageReceived chan string
 
+//ConnectTcpListener contains the state and settings for the listener
 type ConnectTcpListener struct {
 	IsListening   bool
 	LastHeartbeat time.Time
@@ -18,6 +17,7 @@ type ConnectTcpListener struct {
 	Port          string
 }
 
+//StartListening connects to the TCP stream coming from the RFID reader
 func (l ConnectTcpListener) StartListening(ipAddress string, port string) {
 	//fmt.Println("Connecting...")
 	readerMessageReceived = make(chan string)
