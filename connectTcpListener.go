@@ -41,6 +41,7 @@ func (l ConnectTcpListener) StartListening(ipAddress string, port string) {
 			readerMessageReceived <- message
 			time.Sleep(1 * time.Second)
 		}
+		//fmt.Println("\tstill listening...")
 	}
 }
 
