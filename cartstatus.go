@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -20,6 +20,15 @@ var lastHeartbeatChan chan time.Time
 var lastHeartbeat time.Time
 var lastConnectAttempt time.Time
 var listener ConnectTcpListener
+var lastTagReadTime time.Time
+
+type tagRead struct {
+	antenna  int
+	tagID    string
+	unixTime string
+}
+
+var last5TagReads []tagRead
 
 //NewCartStatus works as a constructor
 func NewCartStatus() *cartstatus {
@@ -31,6 +40,7 @@ func NewCartStatus() *cartstatus {
 
 	cs.internetStatus = GetInternetStatus()
 	cs.readerStatus = "Unknown"
+	cs.lastRead = lastTagReadTime
 	return cs
 }
 
@@ -47,7 +57,7 @@ func (cs cartstatus) GetStatus() cartstatus {
 		case latestHeartbeat = <-lastHeartbeatChan:
 			lastHeartbeat = latestHeartbeat
 		default:
-			fmt.Println(latestHeartbeat)
+			//fmt.Println(latestHeartbeat)
 			latestHeartbeat = time.Time{}
 			//fmt.Println("\t\tNo heartbeat messages")
 		}
@@ -74,10 +84,13 @@ func GetReaderStatus() {
 				//fmt.Println("Checking for messages from the reader")
 				select {
 				case message := <-readerMessageReceived:
-					//fmt.Println("Message received: " + message)
+					//Heartbeat message
 					if strings.ContainsAny(message, "*") {
-						//fmt.Println("\tSending the time to the lastHeartbeat channel...")
 						lastHeartbeatChan <- time.Now()
+					}
+					//Data message
+					if strings.ContainsAny(message, ",") {
+						HandleReaderData(message)
 					}
 				default:
 					//fmt.Println("No messages from the reader")
@@ -86,6 +99,30 @@ func GetReaderStatus() {
 				//fmt.Println("\tGetting reader status...")
 				time.Sleep(3 * time.Second)
 			}
+		}
+	}
+}
+
+func HandleReaderData(data string) {
+	lines := strings.Split(data, "\n")
+	//loop through the lines we got back
+	for _, line := range lines {
+		parsedData := strings.Split(line, ",")
+		//data is the correct length so proceed
+		if len(parsedData) == 3 {
+			var newTagRead tagRead
+			newTagRead.antenna, _ = strconv.Atoi(parsedData[0])
+			newTagRead.tagID = parsedData[1]
+			newTagRead.unixTime = parsedData[2]
+
+			//append to the last5TagReads slice, but first make sure we don't have more than 5
+			if len(last5TagReads) == 5 {
+				last5TagReads = last5TagReads[:len(last5TagReads)-1]
+			}
+			last5TagReads = append(last5TagReads, newTagRead)
+
+			//not exact, should parse the unix time but this will be close enough
+			lastTagReadTime = time.Now()
 		}
 	}
 }
