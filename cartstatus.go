@@ -12,6 +12,7 @@ type status struct {
 	readerStatus      string
 	lastRead          time.Time
 	batteryPercentage int
+	last5Reads        string
 }
 
 type cartstatus status
@@ -41,6 +42,12 @@ func NewCartStatus() *cartstatus {
 	cs.internetStatus = GetInternetStatus()
 	cs.readerStatus = "Unknown"
 	cs.lastRead = lastTagReadTime
+
+	var last5Reads strings.Builder
+	for _, tr := range last5TagReads {
+		last5Reads.WriteString(tr.tagID)
+	}
+	cs.last5Reads = last5Reads.String()
 	return cs
 }
 
@@ -74,7 +81,7 @@ func (cs cartstatus) GetStatus() cartstatus {
 
 //GetReaderStatus checks to see if the RFID reader is transmitting the heartbeat over TCP port 14500
 func GetReaderStatus() {
-	if !listener.IsListening {
+	if listener.Status != Connecting && listener.Status != Listening {
 		//Wait 10 seconds before trying to reconnect
 		if time.Now().Sub(lastConnectAttempt).Seconds() > float64(10) {
 			go listener.StartListening("192.168.1.79", "14150")

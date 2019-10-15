@@ -9,9 +9,18 @@ import (
 
 var readerMessageReceived chan string
 
+//ListenerStatus is the enum for the current status of the listener
+type ListenerStatus int
+
+const (
+	NotConnected ListenerStatus = iota
+	Connecting   ListenerStatus = iota
+	Listening    ListenerStatus = iota
+)
+
 //ConnectTcpListener contains the state and settings for the listener
 type ConnectTcpListener struct {
-	IsListening   bool
+	Status        ListenerStatus
 	LastHeartbeat time.Time
 	IPAddress     string
 	Port          string
@@ -19,22 +28,23 @@ type ConnectTcpListener struct {
 
 //StartListening connects to the TCP stream coming from the RFID reader
 func (l ConnectTcpListener) StartListening(ipAddress string, port string) {
-	//fmt.Println("Connecting...")
+	fmt.Println("Connecting to " + ipAddress + "...")
+	l.Status = Connecting
 	readerMessageReceived = make(chan string)
 	l.IPAddress = ipAddress
 	l.Port = port
 	conn, err := net.Dial("tcp", ipAddress+":"+port)
 	if err != nil {
 		fmt.Println(err)
-		l.IsListening = false
+		l.Status = NotConnected
 		return
 	}
-	l.IsListening = true
+	l.Status = Listening
 	for {
 
 		message, err := bufio.NewReader(conn).ReadString('\n')
 		if err != nil {
-			l.IsListening = false
+			l.Status = NotConnected
 			fmt.Printf("Failed to connect: %v\n", err)
 			break
 		} else {
